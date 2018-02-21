@@ -1,6 +1,5 @@
 import java.util.Arrays;
 import java.util.Random;
-import java.util.function.DoubleFunction;
 
 public class Neuron {
 
@@ -11,24 +10,21 @@ public class Neuron {
    * question: is it a member of the neuron or the layer?
    * there might be memory issues
    */
-  private DoubleFunction<Double>  activationFunction;
 
   /**
-   * creates a neuron with randomly initialized (between -0.5 and 0.5) weights
+   * creates a neuron with randomly initialized weights
    * @param inputCount number of inputs the neuron accepts
-   * @param activationFunction neuron's activation function
    */
-  public Neuron(int inputCount, DoubleFunction activationFunction) {
+  public Neuron(int inputCount) {
     this.inputCount = inputCount;
-    this.activationFunction = activationFunction;
     this.weights = new double[inputCount];
     Random rand = new Random();
 
     //setting random weight values
     for (int i = 0; i < weights.length; i++) {
-      weights[i] = rand.nextDouble() - 0.5;
+      weights[i] = (rand.nextDouble() - 0.5) * 0.1;
     }
-    bias = rand.nextDouble() - 0.5;
+    bias = (rand.nextDouble() - 0.5) * 0.1;
   }
 
   /**
@@ -50,7 +46,7 @@ public class Neuron {
   /**
    * method to fire the neuron.
    * @param in neuron input array: has to be the same length as the weight array
-   * @return neuron output: dot product of weight and input vectors, fed to the activation function
+   * @return neuron output: dot product of weight and input vectors
    */
   public double fire(double[] in) {
     if (in.length != this.weights.length) {
@@ -66,20 +62,19 @@ public class Neuron {
     }
     sum += bias;
 
-    double ret = this.activationFunction.apply(sum);
-    return ret;
+    return sum;
   }
 
   /**
    * method to fire the neuron with a single input. intended for input layer use
    * @param in neuron input parameter
-   * @return
+   * @return weight and input vector dot product
    */
   public double fire(double in) {
     if (1 != this.weights.length) {
       throw new IllegalArgumentException("Inappropriate input length: Neuron");
     }
-    return this.activationFunction.apply(this.weights[0] * in + bias);
+    return this.weights[0] * in + bias;
   }
 
   public double getWeight(int index) {
