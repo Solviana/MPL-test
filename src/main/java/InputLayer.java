@@ -8,7 +8,7 @@ public class InputLayer extends NeuralLayer {
    * @param inputCount number of neural network inputs: every neuron handles a single input
    */
   public InputLayer(int inputCount) {
-    super(1, inputCount, x->x);
+    super(1, inputCount, ActivationFunction.linear());
 
     //fix weight to 1 bias to 0
     for (int i = 0; i < inputCount; i++) {
@@ -31,7 +31,7 @@ public class InputLayer extends NeuralLayer {
     //feed the input through the neurons one at a time (room for improvement!)
     double[] ret = new double[getLayerNeuronCount()];
     for (int i = 0; i < ret.length; i++) {
-      ret[i] = getNeuron(i).fire(in[i]);
+      ret[i] = getActFcn().apply(getNeuron(i).fire(in[i]));
     }
 
     return ret;

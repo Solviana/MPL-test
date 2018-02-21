@@ -1,3 +1,4 @@
+
 public class HiddenLayer extends NeuralLayer {
 
   /**
@@ -9,6 +10,9 @@ public class HiddenLayer extends NeuralLayer {
     super(inputCount, neuronCount);
   }
 
+  protected HiddenLayer(int inputCount, int neuronCount, ActivationFunction actFcn) {
+    super(inputCount, neuronCount, actFcn);
+  }
   /**
    * processes the layer input and returns the output of neurons as an array
    * @param in input data array
@@ -18,7 +22,7 @@ public class HiddenLayer extends NeuralLayer {
     //feed the input through the neurons one at a time (room for improvement!)
     double[] ret = new double[getLayerNeuronCount()];
     for (int i = 0; i < ret.length; i++) {
-      ret[i] = getNeuron(i).fire(in);
+      ret[i] = getActFcn().apply(getNeuron(i).fire(in));
     }
     return ret;
   }

@@ -14,18 +14,29 @@ public class NeuralNetwork {
   private ArrayList<NeuralLayer> layers;
 
   /**
-   * network constructor.
+   * network constructor with arbitrary output layer activation function
+   * default network size is 2 (input and output layers), additional hidden layers can be added
+   * with methods
+   * @param inputCount number of inputs in the network
+   * @param outputCount number of outputs in the network
+   */
+  public NeuralNetwork(int inputCount, int outputCount, ActivationFunction actFcn) {
+    layers = new ArrayList<>();
+    layers.add(new InputLayer(inputCount));
+    layers.add(new HiddenLayer(inputCount, outputCount, actFcn));
+    this.inputCount = inputCount;
+    this.outputCount = outputCount;
+  }
+
+  /**
+   * network constructor with sigmoid layer at the output
    * default network size is 2 (input and output layers), additional hidden layers can be added
    * with methods
    * @param inputCount number of inputs in the network
    * @param outputCount number of outputs in the network
    */
   public NeuralNetwork(int inputCount, int outputCount) {
-    layers = new ArrayList<>();
-    layers.add(new InputLayer(inputCount));
-    layers.add(new HiddenLayer(inputCount, outputCount));
-    this.inputCount = inputCount;
-    this.outputCount = outputCount;
+    this(inputCount,outputCount, ActivationFunction.sigmoid());
   }
 
   /**
@@ -61,21 +72,22 @@ public class NeuralNetwork {
    * adds a layer before the output layer, and updates the output layer to have appropriate
    * amount of inputs
    * @param l layer to be added
-   *          layer neurons have to have appropriate inputs
+   *          layer neurons have to have appropriate amount of inputs
    */
   public void addHiddenLayer(HiddenLayer l) {
     if (l.getNeuron(0).getInputCount() != layers.get(getLastIndex() - 1).getLayerNeuronCount()) {
       throw new IllegalArgumentException("Inappropriate input count");
     }
-    
-    layers.add(getLastIndex(), l);
+    // create the new output layer
     HiddenLayer newOutLayer = new HiddenLayer(l.getLayerNeuronCount(),
-        this.outputCount);
+        this.outputCount, this.layers.get(getLastIndex()).getActFcn());
+
+    layers.add(getLastIndex(), l);
     layers.set(getLastIndex(), newOutLayer);
   }
 
   /**
-   * adds a hidden layer with n neurons
+   * adds a hidden layer with n neurons, and sigmoid activation function
    * @param neuronCount number of neurons in the layer to be added
    */
   public void addHiddenLayer(int neuronCount) {
@@ -131,19 +143,20 @@ public class NeuralNetwork {
         error = trainingValidation(validationData);
         outFile.write(error + System.lineSeparator());
         i++;
-      } while (previousError > error && i < maxIterations);
+      } while (/*previousError > error && */i < maxIterations);
     } catch (IOException e) {
       System.out.println("IOException");
     }
   }
 
   private void trainOnBatch(double[][] trainingData, double trainingRate) {
+    // stack to hold the layer results
+    ArrayDeque<double[]> results;
+    // array to hold the neuron output derivatives
+    double[] neuronDelta;
+    double[][] weightDelta;
     // iterate over the examples one at a time, and update the weights using backpropagation
     for (double[] example : trainingData) {
-      // stack to hold the layer results
-      ArrayDeque<double[]> results;
-      // array to hold the neuron output derivatives
-      double[] neuronDelta;
       results = new ArrayDeque<>();
       // separate input from output
       double[] trainingInput = Arrays.copyOfRange(example, 0, inputCount);
@@ -154,18 +167,21 @@ public class NeuralNetwork {
         results.push(n.propagate(results.peek()));
       }
 
-      // process the output layer and update its weights
+      // process the output layer but do not update the weights yet
       // variable to hold the current layer reference
       NeuralLayer currentLayer = layers.get(layers.size() - 1);
       neuronDelta = new double[currentLayer.getLayerNeuronCount()];
       // 2D array to hold the weight updates
-      double[][] weightDelta = new double[currentLayer.getLayerNeuronCount()][currentLayer
+      weightDelta = new double[currentLayer.getLayerNeuronCount()][currentLayer
           .getNeuron(0).getInputCount() + 1];
       // current layer's output, popped from the stack
       double[] output = results.pop();
       for (int i =  0; i < currentLayer.getLayerNeuronCount(); i++) {
-        // calculate the neuron's derivative, the output layer is linear so it's easy
-        neuronDelta[i] = (trainingOutput[i] - output[i]) * output[i] * (1 - output[i]);
+        // calculate the neuron's derivative which is the derivative of the error function
+        // multiplied by the derivative of the activation function at the weight and input vector
+        // dot product (chain rule)
+        neuronDelta[i] = (trainingOutput[i] - output[i]) * currentLayer.getActFcn().applyDerivative(
+            currentLayer.getNeuron(i).fire(results.peek()));
         for (int j = 0; j < currentLayer.getNeuron(i).getInputCount(); j++) {
           // calculate the gradient
           weightDelta[i][j] = neuronDelta[i] * trainingRate * results.peek()[j];

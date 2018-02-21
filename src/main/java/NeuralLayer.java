@@ -1,33 +1,39 @@
-import java.util.function.DoubleFunction;
-import java.util.ArrayDeque;
 
 public abstract class NeuralLayer {
 
   private Neuron[] neurons;
+  private ActivationFunction actFcn;
 
   /**
    * layer constructor
    * @param inputCount  number of inputs each neuron has to handle
    * @param neuronCount number of neurons in the layer
-   * @param activationFunction activation function for the layer's neurons
+   * @param actFcn activation function for the layer's neurons
    */
-  protected NeuralLayer(int inputCount, int neuronCount, DoubleFunction<Double> activationFunction) {
+  public NeuralLayer(int inputCount, int neuronCount, ActivationFunction actFcn) {
     neurons = new Neuron[neuronCount];
-
-    //initializing the neurons with random weigths
+    this.actFcn = actFcn;
+    //initializing the neurons with random weights
     for (int i = 0; i < neurons.length; i++) {
-      neurons[i] = new Neuron(inputCount, activationFunction);
+      neurons[i] = new Neuron(inputCount);
     }
   }
 
   /**
    * layer constructor with sigmoid activation function as default
-   * can use this(..) constructor????
    * @param inputCount  number of inputs each neuron has to handle
    * @param neuronCount number of neurons in the layer
    */
   public NeuralLayer(int inputCount, int neuronCount) {
-    this(inputCount, neuronCount, x -> 1 / (1 + Math.exp(-x)));
+    this(inputCount, neuronCount, ActivationFunction.sigmoid());
+  }
+
+  /**
+   * getter for the activation function
+   * @return layer's activation function
+   */
+  public ActivationFunction getActFcn() {
+    return actFcn;
   }
 
   /**
@@ -46,7 +52,6 @@ public abstract class NeuralLayer {
   public Neuron getNeuron(int index) {
     return neurons[index];
   }
-
 
   /**
    * this function propagates data through the network
